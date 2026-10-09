@@ -50,6 +50,9 @@ input[type=number]{text-align:right}
 .f input[type=number]{font-size:20px}
 .f small{display:block;color:var(--sub);font-size:12px}
 .ng{color:var(--warn);font-weight:600}
+#bellTable th,#bellTable td{white-space:nowrap;font-variant-numeric:tabular-nums}
+#bellTable td.muted{color:var(--sub);text-align:left;white-space:normal;min-width:200px}
+#basisSeg button{padding:4px 8px}
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 label.chk{display:flex;gap:8px;align-items:center;padding:6px 0}
 .hint{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:4px 0}
@@ -101,7 +104,14 @@ a{color:var(--acc)}
 <section id="tab-live">
   <h2>実戦カウント</h2>
   <div class="card"><div class="tiles" id="liveTiles"></div><p class="note" id="liveEmpty"></p></div>
-  <p class="note">「使用」を外した項目は計算に入れません。共通ベルは数え始めると自動で「使用」になります。</p>
+  <p class="note">「使用」を外した項目は計算に入れません。共通ベルは数え始めると自動で「使用」になります。通常時とAT中のベルは分けて数えてください(結果タブで区分ごとの推測を表示)。</p>
+
+  <h2>規定ゲーム数(AT後)</h2>
+  <div class="card">
+    <div id="zoneRows"></div>
+    <div class="bar"><button id="zoneUndo">直前の操作を取り消す</button></div>
+  </div>
+  <p class="note">AT終了後のゲーム数で150G・400Gに到達したとき、結果を1回だけ押してください。150Gは「変換高確率中」の帯で判断します。帯の出ない内部高確は数えられないため移行率が低めに出やすく、低設定寄りに偏ることがあります。気になる場合は「使用」を外してください。</p>
 
   <h2>高確中の変換メモ(記録専用)</h2>
   <div class="card">
@@ -133,10 +143,21 @@ a{color:var(--acc)}
     <div class="sum" id="summary"></div>
     <p class="note" id="usedList"></p>
   </div>
+  <h2>共通ベルだけで見た推測</h2>
+  <div class="card">
+    <div style="overflow-x:auto"><table id="bellTable"></table></div>
+    <div class="place" style="margin-top:8px"><div>総合の推測に入れるベル</div>
+      <div class="seg" id="basisSeg">
+        <button data-basis="normal">通常時</button><button data-basis="at">AT中</button><button data-basis="total">合計</button><button data-basis="none">なし</button>
+      </div>
+    </div>
+  </div>
+  <p class="note">AT中ゲーム数は「総ゲーム数 − 通常時ゲーム数」です。公表されているベル確率は通常時の値なので、AT中と合計は「AT中も同じ確率で抽選している」と仮定した計算です。</p>
   <h2>使用している設定別数値</h2>
   <div class="card" style="overflow-x:auto"><table id="spec"></table></div>
   <p class="note">共通ベルの設定2・3は資料に記載がなく、設定1と同値(1/95.8)と仮定しています。AT直撃は天井を除いた直撃の回数を入れてください。</p>
-  <p class="note">計算方法: 各項目の出現回数をポアソン分布とみなした尤度を掛け合わせ、事前確率を均等として正規化しています。各項目は独立と仮定した近似です。CZ は OPPOSITE BATTLE とファーストリコリスの合計を使います(契機別の設定差が公開されていないため)。</p>
+  <p class="note">※ は公表値から算出した値です。OPPOSITE BATTLE(単独)= CZ合計からファーストリコリスを除いた確率、RUSH(直撃を除く)= RUSH突入からAT直撃を除いた確率です。同じ当選を二重に数えないよう、計算にはこの重ならない形を使います。</p>
+  <p class="note">計算方法: 回数の項目はポアソン分布、150G・400Gは到達回数に対する当選の二項分布として尤度を掛け合わせ、事前確率を均等として正規化しています。各項目は独立と仮定した近似です。400GのCZはCZ回数にも含まれるため、少しだけ重なりが残ります。</p>
   <p class="note">分母には通常時ゲーム数を使います。未入力のときだけ総ゲーム数で代用しますが、AT中のゲーム数が含まれるため、どの項目も低設定寄りに偏ります。</p>
 </section>
 
@@ -176,14 +197,15 @@ a{color:var(--acc)}
   <div class="card">
     <h3>実戦タブ</h3>
     <ul>
-      <li>その場で数える項目の +1 / −1 カウンター(初期設定: CZ(レア役由来)、共通ベル、謎Vストック)</li>
+      <li>その場で数える項目の +1 / −1 カウンター(初期設定: CZ(レア役由来)、共通ベル(通常時)、共通ベル(AT中)、謎Vストック)</li>
       <li>項目ごとの「使用」切り替え(外すと計算から除外)</li>
+      <li>規定ゲーム数(AT後): 150G到達時の高確移行あり/なし、400G到達時のCZ当選あり/なしを記録して計算に使用、取り消し</li>
       <li>高確中の変換メモ: チェリー・スイカ・弱リコリス目ごとの変換あり/なし、変換率、全セッション合計、取り消し</li>
       <li>示唆のチェック: ラッシュ終了画面「ハワイ」、虹サミートロフィー</li>
     </ul>
     <h3>マイスロタブ</h3>
     <ul>
-      <li>マイスロの項目のまとめ入力: 総ゲーム数、通常時ゲーム数、OPPOSITE BATTLE突入・成功、ファーストリコリス突入・成功、RUSH突入、AT直撃、レア役確率</li>
+      <li>マイスロの項目のまとめ入力: 総ゲーム数、通常時ゲーム数、OPPOSITE BATTLE突入・成功、ファーストリコリス突入・成功、RUSH突入、AT直撃、レア役別の確率(チェリー・スイカ・弱リコリス目・強リコリス目)</li>
       <li>空欄は計算から除外、0 は「0回」として計算</li>
       <li>通常時ゲーム数を確率計算の分母に使用(未入力なら総ゲーム数で代用)</li>
       <li>自動表示: 総CZ突入回数、CZ確率、各CZの成功率、通常契機CZ(総CZ − レア役由来)</li>
@@ -192,6 +214,7 @@ a{color:var(--acc)}
     <ul>
       <li>設定1〜6の事後確率(バー表示)、設定4以上の確率、期待機械割</li>
       <li>計算に使った項目の一覧、設定別数値の表</li>
+      <li>共通ベルだけで見た推測: 通常時・AT中・合計それぞれの確率と設定1〜6の確率、総合の推測に入れる区分の切り替え</li>
       <li>画面上部に設定4以上の確率と期待機械割を常時表示</li>
     </ul>
     <h3>管理タブ</h3>
@@ -220,14 +243,30 @@ a{color:var(--acc)}
 </main>
 
 <script>
-const SPEC={
-  cz:    {den:[198.7,196.9,191.3,183.3,175.9,169.4]},
-  at:    {den:[328.8,323.4,312.1,288.3,271.6,256.7]},
-  direct:{den:[22429.5,19006.5,15454.1,10809.3,7809.6,6263.7]},
-  first: {den:[3965.0,3706.6,3107.3,2925.9,2425.8,2084.8]},
-  bell:  {den:[95.8,95.8,95.8,87.6,83.2,79.1]}
+// 解析サイトの公表値(1/x の x)
+const PUB={
+  cz:    [198.7,196.9,191.3,183.3,175.9,169.4],
+  at:    [328.8,323.4,312.1,288.3,271.6,256.7],
+  direct:[22429.5,19006.5,15454.1,10809.3,7809.6,6263.7],
+  first: [3965.0,3706.6,3107.3,2925.9,2425.8,2084.8],
+  bell:  [95.8,95.8,95.8,87.6,83.2,79.1]
 };
-const SPEC_NAMES={cz:"CZ(合計)",at:"AT初当り",direct:"AT直撃(天井除く)",first:"ファーストリコリス",bell:"共通ベル"};
+// 重なりを除いた確率: 1/(1/全体 − 1/内訳)
+const minus=(all,part)=>all.map((x,i)=>1/(1/x-1/part[i]));
+// 計算に使う回数系の項目。ob と atx は公表値からの算出値
+const SPEC={
+  ob:    {name:"OPPOSITE BATTLE(単独)", den:minus(PUB.cz,PUB.first), derived:true},
+  first: {name:"ファーストリコリス",     den:PUB.first},
+  atx:   {name:"RUSH(直撃を除く)",       den:minus(PUB.at,PUB.direct), derived:true},
+  at:    {name:"RUSH突入(AT初当り)",     den:PUB.at},
+  direct:{name:"AT直撃(天井除く)",       den:PUB.direct},
+  bell:  {name:"共通ベル",               den:PUB.bell}
+};
+// 到達時の当否で見る項目(二項分布)
+const RATES={
+  h150:{name:"150G 変換高確移行",p:[0.5,0.5,0.5,0.547,0.586,0.625]},
+  z400:{name:"400G CZ当選",      p:[0.109,0.117,0.145,0.168,0.195,0.254]}
+};
 const PAYOUT=[97.9,98.9,101.3,106.1,110.4,114.6];
 
 // calc: 寄与する計算種別(空は記録専用)。種別に寄与する項目がすべて入力済みのときだけ計算に使う
@@ -239,13 +278,22 @@ const ITEMS=[
   {k:"frWin",  label:"ファーストリコリス成功", calc:[],              place:"bulk", note:"記録専用"},
   {k:"at",     label:"RUSH突入(AT初当り)",     calc:["at"],          place:"bulk"},
   {k:"direct", label:"AT直撃(天井除く)",       calc:["direct"],      place:"bulk"},
-  {k:"rareDen",label:"レア役確率 1/x",         calc:[],              place:"bulk", fixed:true, den:true, optional:true, note:"記録専用・x を入力"},
+  {k:"rareCherry",label:"チェリー確率 1/x",     calc:[],              place:"bulk", fixed:true, den:true, optional:true, note:"記録専用・x を入力(解析値 1/89.2)"},
+  {k:"rareSuika", label:"スイカ確率 1/x",       calc:[],              place:"bulk", fixed:true, den:true, optional:true, note:"記録専用・x を入力(解析値 1/89.2)"},
+  {k:"rareWeak",  label:"弱リコリス目確率 1/x", calc:[],              place:"bulk", fixed:true, den:true, optional:true, note:"記録専用・x を入力(解析値 1/50.3)"},
+  {k:"rareStrong",label:"強リコリス目確率 1/x", calc:[],              place:"bulk", fixed:true, den:true, optional:true, note:"記録専用・x を入力(解析値 1/728.2)"},
   {k:"czRare", label:"CZ(レア役由来)",         calc:[],              place:"live", note:"記録専用"},
-  {k:"bell",   label:"共通ベル",               calc:["bell"],        place:"live", optional:true},
+  {k:"bellN",  label:"共通ベル(通常時)",       calc:["bell"],        place:"live", optional:true},
+  {k:"bellA",  label:"共通ベル(AT中)",         calc:[],              place:"live", optional:true, note:"ベル別推測用"},
   {k:"vstock", label:"謎Vストック",            calc:[],              place:"live", optional:true, note:"記録専用"}
 ];
 const isCalc=it=>it.calc.length>0;
 const CONV_ROLES=[{k:"cherry",label:"チェリー"},{k:"suika",label:"スイカ"},{k:"weak",label:"弱リコリス目"}];
+// 規定ゲーム数(AT後)に到達したときの当否
+const ZONES=[
+  {k:"h150",label:"150G到達",no:"高確なし +1",yes:"高確移行 +1",word:"移行"},
+  {k:"z400",label:"400G到達",no:"CZなし +1",  yes:"CZ当選 +1",  word:"CZ当選"}
+];
 const HINTS=[
   {k:"hawaii", label:"ラッシュ終了画面「ハワイ」(設定6濃厚)", w:0.001},
   {k:"rainbow",label:"虹サミートロフィー(設定6濃厚)",       w:0.001}
@@ -273,8 +321,15 @@ function fillSession(s){
     s.use.obIn=!!s.use.cz;
     delete s.counts.cz;delete s.use.cz;
   }
+  // 旧形式3: 共通ベルを区別せず持っていた → 通常時のベルとして扱う
+  if(s.counts.bellN==null&&s.counts.bell!=null){
+    s.counts.bellN=s.counts.bell;s.use.bellN=!!s.use.bell;
+    delete s.counts.bell;delete s.use.bell;
+  }
   // 実戦の項目は 0 から数え始める。マイスロの項目は入力されるまで空欄(計算に使わない)
   ITEMS.forEach(it=>{if(s.counts[it.k]==null)s.counts[it.k]=0;if(s.use[it.k]==null)s.use[it.k]=!it.optional&&placeOf(it.k)==="live";});
+  s.zone=s.zone||{};s.zoneLog=s.zoneLog||[];
+  ZONES.forEach(z=>{s.zone[z.k]=s.zone[z.k]||{n:0,y:0};if(s.use[z.k]==null)s.use[z.k]=true;});
   s.conv=s.conv||{};s.convLog=s.convLog||[];
   CONV_ROLES.forEach(r=>{s.conv[r.k]=s.conv[r.k]||{n:0,y:0};});
 }
@@ -287,9 +342,15 @@ function newSession(){
 function cur(){return store.sessions.find(s=>s.id===store.cur);}
 
 // ---- 静的な部分 ----
-$("spec").innerHTML="<tr><th>設定</th>"+[1,2,3,4,5,6].map(i=>`<th>${i}</th>`).join("")+"</tr>"+
-  Object.keys(SPEC).map(k=>`<tr><td>${SPEC_NAMES[k]}</td>`+SPEC[k].den.map(v=>`<td>1/${v}</td>`).join("")+"</tr>").join("")+
-  "<tr><td>機械割</td>"+PAYOUT.map(v=>`<td>${v}%</td>`).join("")+"</tr>";
+{
+  const row=(name,cells)=>`<tr><td>${name}</td>`+cells.map(v=>`<td>${v}</td>`).join("")+"</tr>";
+  const den=a=>a.map(v=>"1/"+(Math.round(v*10)/10));
+  $("spec").innerHTML="<tr><th>設定</th>"+[1,2,3,4,5,6].map(i=>`<th>${i}</th>`).join("")+"</tr>"+
+    row("CZ合計(参考)",den(PUB.cz))+
+    Object.values(SPEC).map(x=>row(x.name+(x.derived?" ※":""),den(x.den))).join("")+
+    Object.values(RATES).map(x=>row(x.name,x.p.map(v=>(v*100).toFixed(1)+"%"))).join("")+
+    row("機械割",PAYOUT.map(v=>v+"%"));
+}
 $("result").innerHTML=[1,2,3,4,5,6].map(i=>`<div class="res"><div>設定${i}</div><div class="track"><div class="fill" id="f${i}"></div></div><div class="pct" id="p${i}">-</div></div>`).join("");
 $("sessTrue").innerHTML='<option value="">確定設定: なし</option>'+[1,2,3,4,5,6].map(i=>`<option value="${i}">確定設定: ${i}</option>`).join("");
 
@@ -345,6 +406,37 @@ $("bulkFields").addEventListener("input",e=>{
   cur()[id]=isFinite(g)&&g>=0?g:null;update();
 }));
 
+// 規定ゲーム数(150G 高確移行・400G CZ当選)
+$("zoneRows").innerHTML=ZONES.map(z=>`
+<div class="cv">
+  <div class="cvh"><b>${z.label}</b><label class="chk" style="padding:0;font-size:13px"><input type="checkbox" data-zuse="${z.k}">使用</label></div>
+  <div class="cva" id="zv_${z.k}"></div>
+  <div class="cvb"><button data-z="${z.k}" data-v="n">${z.no}</button><button class="plus" data-z="${z.k}" data-v="y">${z.yes}</button></div>
+</div>`).join("");
+$("zoneRows").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-z]");if(!b)return;
+  const s=cur();s.zone[b.dataset.z][b.dataset.v]++;s.zoneLog.push([b.dataset.z,b.dataset.v]);
+  update();
+});
+$("zoneRows").addEventListener("change",e=>{
+  const k=e.target.dataset.zuse;if(!k)return;
+  cur().use[k]=e.target.checked;update();
+});
+$("zoneUndo").onclick=()=>{
+  const s=cur();const last=s.zoneLog.pop();if(!last)return;
+  s.zone[last[0]][last[1]]=Math.max(0,s.zone[last[0]][last[1]]-1);
+  update();
+};
+function renderZone(s){
+  ZONES.forEach(z=>{
+    const d=s.zone[z.k],t=d.n+d.y,p=RATES[z.k].p;
+    $("zv_"+z.k).textContent=`${z.word} ${d.y} / ${t}回`+(t?`(${(d.y/t*100).toFixed(1)}%)`:"")+
+      ` ／ 設定1 ${(p[0]*100).toFixed(1)}%・設定6 ${(p[5]*100).toFixed(1)}%`;
+    document.querySelector(`[data-zuse="${z.k}"]`).checked=!!s.use[z.k];
+  });
+  $("zoneUndo").disabled=!s.zoneLog.length;
+}
+
 // 変換メモ
 $("convRows").innerHTML=CONV_ROLES.map(r=>`
 <div class="cv">
@@ -382,6 +474,12 @@ HINTS.forEach(h=>{
   $("w_"+h.k).oninput=e=>{const v=parseFloat(e.target.value);store.weights[h.k]=isFinite(v)&&v>=0?v:h.w;update();};
 });
 
+// 総合の推測に入れるベルの区分
+$("basisSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-basis]");if(!b)return;
+  store.bellBasis=b.dataset.basis;update();
+});
+
 // 入力場所
 function buildPlace(){
   $("placeRows").innerHTML=ITEMS.filter(it=>!it.fixed).map(it=>{
@@ -417,19 +515,60 @@ function denom(s){
   if(s.normalGames>0)return {G:s.normalGames,normal:true};
   return {G:s.games||0,normal:false};
 }
+// 共通ベルの区分ごとのゲーム数(AT中 = 総 − 通常時)
+function bellGames(s){
+  const total=s.games>0?s.games:0,normal=s.normalGames>0?s.normalGames:0;
+  return {total,normal,at:normal>0&&total>normal?total-normal:0};
+}
+const BELL_BASES=[
+  {k:"normal",label:"通常時",need:"共通ベル(通常時)と通常時ゲーム数を入れると表示します"},
+  {k:"at",label:"AT中",need:"共通ベル(AT中)と総・通常時ゲーム数を入れると表示します"},
+  {k:"total",label:"合計",need:"両方の共通ベルと総ゲーム数を入れると表示します"}
+];
+// 区分ごとのベル回数と分母。AT中も通常時と同じ確率で抽選していると仮定する
+function bellTerm(s,basis){
+  const g=bellGames(s),u=s.use,c=s.counts;
+  if(basis==="normal"&&u.bellN&&g.normal>0)return {key:"bell",k:c.bellN,G:g.normal};
+  if(basis==="at"&&u.bellA&&g.at>0)return {key:"bell",k:c.bellA,G:g.at};
+  if(basis==="total"&&u.bellN&&u.bellA&&g.total>0)return {key:"bell",k:c.bellN+c.bellA,G:g.total};
+  return null;
+}
+// terms の尤度の対数。{key, k(回数), G(分母)} はポアソン、{bin, y(当選), n(非当選)} は二項分布
+function logLik(terms){
+  const L=[0,0,0,0,0,0];
+  terms.forEach(t=>{
+    for(let i=0;i<6;i++){
+      if(t.bin){const p=RATES[t.bin].p[i];L[i]+=t.y*Math.log(p)+t.n*Math.log(1-p);}
+      else{const p=1/SPEC[t.key].den[i];L[i]+=t.k*Math.log(p)-t.G*p;}
+    }
+  });
+  return L;
+}
+function normalize(L){
+  const m=Math.max(...L);const w=L.map(x=>Math.exp(x-m));const t=w.reduce((a,b)=>a+b,0);
+  return w.map(x=>x/t);
+}
 function compute(){
   const s=cur();const {G,normal}=denom(s);
-  const logL=[0,0,0,0,0,0];
-  const used=[];
+  const terms=[],used=[];
+  const u=k=>!!s.use[k],c=k=>s.counts[k]||0;
+  const add=(key,k)=>{terms.push({key,k,G});used.push(SPEC[key].name);};
   if(G>0){
-    for(const key in SPEC){
-      const contrib=ITEMS.filter(it=>it.calc.includes(key));
-      if(!contrib.length||!contrib.every(it=>s.use[it.k]))continue;
-      const k=contrib.reduce((a,it)=>a+(s.counts[it.k]||0),0);
-      used.push(SPEC_NAMES[key]);
-      for(let i=0;i<6;i++){const p=1/SPEC[key].den[i];logL[i]+=k*Math.log(p)-G*p;}
-    }
+    // 重ならない形で使う: OPPOSITE BATTLE とファーストリコリス、直撃を除いたRUSH と AT直撃
+    if(u("obIn"))add("ob",c("obIn"));
+    if(u("first"))add("first",c("first"));
+    if(u("at")&&u("direct")){add("atx",Math.max(0,c("at")-c("direct")));add("direct",c("direct"));}
+    else if(u("at"))add("at",c("at"));
+    else if(u("direct"))add("direct",c("direct"));
   }
+  ZONES.forEach(z=>{
+    const d=s.zone[z.k];
+    if(u(z.k)&&d.n+d.y>0){terms.push({bin:z.k,y:d.y,n:d.n});used.push(`${RATES[z.k].name}(${d.y}/${d.n+d.y})`);}
+  });
+  const basis=store.bellBasis||"normal";
+  const b=basis==="none"?null:bellTerm(s,basis);
+  if(b){terms.push(b);used.push(`共通ベル(${BELL_BASES.find(x=>x.k===basis).label})`);}
+  const logL=logLik(terms);
   const hints=[];
   HINTS.forEach(h=>{
     if(s.hints[h.k]){
@@ -438,9 +577,21 @@ function compute(){
       for(let i=0;i<5;i++)logL[i]+=Math.log(Math.max(w,1e-12));
     }
   });
-  const m=Math.max(...logL);
-  const w=logL.map(x=>Math.exp(x-m));const t=w.reduce((a,b)=>a+b,0);
-  return {post:w.map(x=>x/t),G,normal,used,hints};
+  return {post:normalize(logL),G,normal,used,hints};
+}
+// 共通ベルだけで見た推測(通常時・AT中・合計)
+function renderBell(s){
+  const head="<tr><th>区分</th><th>確率</th><th>4以上</th>"+[1,2,3,4,5,6].map(i=>`<th>設定${i}</th>`).join("")+"<th>回数/G</th></tr>";
+  $("bellTable").innerHTML=head+BELL_BASES.map(b=>{
+    const t=bellTerm(s,b.k);
+    if(!t)return `<tr><td>${b.label}</td><td colspan="9" class="muted">${b.need}</td></tr>`;
+    const post=normalize(logLik([t]));
+    const hi=post.slice(3).reduce((a,c)=>a+c,0);
+    return `<tr><td>${b.label}</td><td>${t.k>0?"1/"+(t.G/t.k).toFixed(1):"-"}</td><td><b>${(hi*100).toFixed(0)}%</b></td>`+
+      post.map(p=>`<td>${(p*100).toFixed(0)}%</td>`).join("")+`<td>${t.k}/${t.G}</td></tr>`;
+  }).join("");
+  const basis=store.bellBasis||"normal";
+  document.querySelectorAll("[data-basis]").forEach(x=>x.classList.toggle("on",x.dataset.basis===basis));
 }
 // マイスロタブの自動表示(総CZ・確率・成功率・通常契機CZ)
 function renderDerived(s){
@@ -464,6 +615,11 @@ function renderDerived(s){
   succ("frWin","first","ファーストリコリス");
   if(cnt("at")!=null)L.push(`RUSH突入 ${cnt("at")}回${rate(cnt("at"))}`);
   if(cnt("direct")!=null)L.push(`AT直撃 ${cnt("direct")}回${rate(cnt("direct"))}`);
+  if(cnt("at")!=null&&cnt("direct")!=null&&cnt("direct")>cnt("at"))L.push(ng("AT直撃がRUSH突入より多くなっています(RUSH突入は直撃を含む回数です)"));
+  if(s.games>0&&s.normalGames>0){
+    if(s.normalGames>s.games)L.push(ng("通常時ゲーム数が総ゲーム数より多くなっています"));
+    else L.push(`AT中ゲーム数 ${s.games-s.normalGames}(総 − 通常時)`);
+  }
   if(G>0&&!(s.normalGames>0))L.push(ng("通常時ゲーム数が未入力のため、総ゲーム数で計算しています"));
   $("derived").innerHTML=L.join("<br>");
 }
@@ -477,6 +633,8 @@ function update(){
     const u=document.querySelector(`[data-use="${it.k}"]`);if(u)u.checked=!!s.use[it.k];
   });
   renderDerived(s);
+  renderBell(s);
+  renderZone(s);
   const r=compute();
   r.post.forEach((p,i)=>{$("f"+(i+1)).style.width=(p*100)+"%";$("p"+(i+1)).textContent=(p*100).toFixed(1)+"%";});
   let text;
@@ -491,7 +649,8 @@ function update(){
     $("summary").innerHTML=html;$("mini").innerHTML=html+g;
   }
   $("usedList").textContent="計算に使った項目: "+([...r.used,...r.hints].join("、")||"なし")+
-    (r.G?(r.normal?" ／ 分母: 通常時ゲーム数":" ／ 分母: 総ゲーム数(通常時ゲーム数が未入力のため)"):"");
+    (r.G?(r.normal?" ／ 回数の項目の分母: 通常時ゲーム数":" ／ 回数の項目の分母: 総ゲーム数(通常時ゲーム数が未入力のため)"):"")+
+    " ／ 150G・400Gは到達回数に対する割合";
   save();
 }
 
@@ -543,12 +702,13 @@ $("impFile").onchange=async e=>{
 };
 $("expJson").onclick=()=>download("lycoreco.json",JSON.stringify(store.sessions,null,2),"application/json");
 $("expCsv").onclick=()=>{
-  const head=["name","created","trueSetting","games","normalGames",...ITEMS.map(i=>i.k),"czTotal","czOther",...CONV_ROLES.flatMap(r=>[r.k+"_hk_noconv",r.k+"_hk_conv"])];
+  const head=["name","created","trueSetting","games","normalGames","atGames",...ITEMS.map(i=>i.k),"czTotal","czOther",...ZONES.flatMap(z=>[z.k+"_no",z.k+"_yes"]),...CONV_ROLES.flatMap(r=>[r.k+"_hk_noconv",r.k+"_hk_conv"])];
   const rows=store.sessions.map(s=>{
     const val=k=>s.use[k]?s.counts[k]:"";
     const total=s.use.obIn&&s.use.first?s.counts.obIn+s.counts.first:"";
     const other=total!==""&&s.use.czRare?total-s.counts.czRare:"";
-    return [s.name,s.created,s.trueSetting,s.games==null?"":s.games,s.normalGames==null?"":s.normalGames,...ITEMS.map(i=>val(i.k)),total,other,
+    return [s.name,s.created,s.trueSetting,s.games==null?"":s.games,s.normalGames==null?"":s.normalGames,bellGames(s).at||"",...ITEMS.map(i=>val(i.k)),total,other,
+      ...ZONES.flatMap(z=>[s.zone[z.k].n,s.zone[z.k].y]),
       ...CONV_ROLES.flatMap(r=>[s.conv[r.k].n,s.conv[r.k].y])]
       .map(v=>`"${String(v==null?"":v).replace(/"/g,'""')}"`).join(",");
   });
@@ -557,6 +717,7 @@ $("expCsv").onclick=()=>{
 
 // ---- 起動 ----
 load();
+if(store.place.bell){store.place.bellN=store.place.bell;delete store.place.bell;}
 store.sessions.forEach(fillSession);
 if(!store.sessions.length)newSession();
 if(!cur())store.cur=store.sessions[store.sessions.length-1].id;
