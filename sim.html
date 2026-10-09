@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>リコリコ 通常時シミュレーター</title>
+<style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#6b6b70;--card:#f3f3f6;--line:#d8d8de;--acc:#d6336c;--onacc:#fff;--warn:#b25b00;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16161a;--fg:#ececf0;--sub:#9a9aa3;--card:#222228;--line:#38383f;--acc:#ff6b9a;--onacc:#16161a;--warn:#ffb057;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16161a;--fg:#ececf0;--sub:#9a9aa3;--card:#222228;--line:#38383f;--acc:#ff6b9a;--onacc:#16161a;--warn:#ffb057;color-scheme:dark}
+:root{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,"Hiragino Sans","Yu Gothic UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}
+h2{font-size:15px;margin:22px 0 8px}
+h3{font-size:13px;margin:12px 0 4px;color:var(--sub)}
+p.note{color:var(--sub);font-size:13px;margin:4px 0}
+.card{background:var(--card);border-radius:12px;padding:12px}
+.f{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,170px);gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.f:last-child{border:0}
+.f small{display:block;color:var(--sub);font-size:11px}
+input[type=text],input[type=number]{width:100%;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit;text-align:right}
+label.chk{display:flex;gap:8px;align-items:center;padding:6px 0}
+button{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-height:44px}
+button.pri{background:var(--acc);color:var(--onacc);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.5}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+td,th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+.ok{color:var(--fg)}.ng{color:var(--warn);font-weight:600}
+#status{font-size:13px;color:var(--sub)}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<h1>通常時シミュレーター(実験用)</h1>
+<p class="note">判明している解析値と、未判明の値の仮定で、通常時を1ゲームずつ回します。結果は設定推測には使いません。<a href="index.html">設定推測に戻る</a></p>
+
+<h2>未判明の値(仮定)</h2>
+<div class="card" id="unknown"></div>
+
+<h2>判明している値</h2>
+<div class="card" id="known"></div>
+<p class="note">確率は%で入力します。「設定1〜6」の欄はカンマ区切りです。確率の分母(1/x)の欄は x を入力します。</p>
+
+<h2>実行</h2>
+<div class="card">
+  <div class="f"><div>1設定あたりの通常時ゲーム数</div><input type="number" id="N" value="2000000" step="100000" min="10000"></div>
+  <div class="bar" style="margin-top:8px">
+    <button class="pri" id="run">シミュレート</button>
+    <button id="fit">高確中変換率を自動調整</button>
+    <span id="status"></span>
+  </div>
+  <p class="note">自動調整は、3役共通の高確中変換率を、設定1のCZ確率(公表値)に合うよう二分探索します。他の設定は調整しないので、設定差の再現度を確かめる目安になります。</p>
+</div>
+
+<h2>結果</h2>
+<div class="card scroll"><table id="res"></table></div>
+<h3>CZ当選契機の内訳(CZ全体に占める割合)</h3>
+<div class="card scroll"><table id="src"></table></div>
+<p class="note">CZ・AT確率は通常時ゲーム数あたりです。公表値との差が5%以上ずれたものを強調表示しています。「250G+α以内」は、AT後最初のCZが 250G+前兆ゲーム数 以内に来た割合です(公表値は約90%)。</p>
+
+<h2>モデルの前提</h2>
+<div class="card">
+<p class="note">・状態は通常、変換高確、前兆の3つです。AT中・CZ中のゲームは含みません。</p>
+<p class="note">・ゲーム数による高確移行と規定ゲーム数のCZ抽選は、AT後のゲーム数で判定します(オプションでCZ後リセットも可)。</p>
+<p class="note">・規定ゲーム数に到達すると前兆に入り、前兆中は小役変換が起きません。前兆の終わりにCZ当否が出て、外れたときはスタンプ経由のCZを抽選します。</p>
+<p class="note">・変換高確中にチェリー・スイカ・弱リコリス目を引くと変換を抽選し、変換したらCZを抽選します。強リコリス目は状態に関係なく変換します。</p>
+<p class="note">・CZのうちファーストリコリスになる割合は、公表値の比(CZ確率 ÷ ファーストリコリス確率)を使います。CZ成功でATに当選したとみなし、ゲーム数をリセットします。</p>
+<p class="note">・AT直撃は毎ゲーム公表値で抽選します。AT間天井850G、CZ間天井600Gです。設定変更時や上位CZ失敗後の天井短縮、上位AT後の復帰は扱いません。</p>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+// [key, label, default, type(num|arr|bool), note]
+const UNKNOWN=[
+  ["convCherry","高確中 チェリーの変換率(%)",30,"num"],
+  ["convSuika","高確中 スイカの変換率(%)",30,"num"],
+  ["convWeak","高確中 弱リコリス目の変換率(%)",30,"num"],
+  ["convWeakNormal","通常中 弱リコリス目の変換率(%)",0,"num","状態依存の変換との記述あり"],
+  ["z100","100G CZ当選率(%)",50,"num"],
+  ["z250","250G CZ当選率(%)",60,"num"],
+  ["z600","600G CZ当選率(%)",40,"num"],
+  ["z750","750G CZ当選率(%)",30,"num"],
+  ["stamp","前兆失敗1回あたりのスタンプ経由CZ率(%)",10,"num","12個でCZ抽選をまとめた近似"],
+  ["zLen","前兆の長さ(G)",10,"num"],
+  ["extend","高確中のレア役でも高確移行を抽選(延長)",true,"bool"],
+  ["resetOnCz","規定ゲーム数をCZ後から数え直す",false,"bool"]
+];
+const KNOWN=[
+  ["cherry","チェリー 1/x",89.2,"num"],
+  ["suika","スイカ 1/x",89.2,"num"],
+  ["weak","弱リコリス目 1/x",50.3,"num"],
+  ["strong","強リコリス目 1/x",728.2,"num"],
+  ["trCherry","チェリー→高確移行(%)",50,"num"],
+  ["trSuika","スイカ→高確移行(%)",50,"num"],
+  ["trWeak","弱リコリス目→高確移行(%)",38,"num"],
+  ["hkMin","高確 滞在保証 最小(G)",20,"num"],
+  ["hkMax","高確 滞在保証 最大(G)",35,"num"],
+  ["h50","50G 高確移行(%)",50,"num"],
+  ["h150","150G 高確移行(%) 設定1〜6","50,50,50,54.7,58.6,62.5","arr"],
+  ["h300","300G 高確移行(%)",100,"num"],
+  ["h450","450G 高確移行(%)",50,"num"],
+  ["h650","650G 高確移行(%)",25,"num"],
+  ["z400","400G CZ当選率(%) 設定1〜6","10.9,11.7,14.5,16.8,19.5,25.4","arr"],
+  ["convCz","変換時CZ当選率 チェリー・スイカ・弱(%)",33,"num"],
+  ["convCzStrong","変換時CZ当選率 強リコリス目(%)",66,"num"],
+  ["czWin","オポジットバトル成功率(%)",53,"num"],
+  ["firstWin","ファーストリコリス成功率(%)",83,"num"],
+  ["czDen","CZ確率 1/x 設定1〜6(公表)","198.7,196.9,191.3,183.3,175.9,169.4","arr"],
+  ["atDen","AT初当り 1/x 設定1〜6(公表)","328.8,323.4,312.1,288.3,271.6,256.7","arr"],
+  ["firstDen","ファーストリコリス 1/x 設定1〜6","3965.0,3706.6,3107.3,2925.9,2425.8,2084.8","arr"],
+  ["directDen","AT直撃 1/x 設定1〜6","22429.5,19006.5,15454.1,10809.3,7809.6,6263.7","arr"],
+  ["atCeil","AT間天井(G)",850,"num"],
+  ["czCeil","CZ間天井(G)",600,"num"]
+];
+function build(box,list){
+  $(box).innerHTML=list.map(([k,l,d,t,n])=>t==="bool"
+    ?`<label class="chk"><input type="checkbox" id="p_${k}" ${d?"checked":""}>${l}</label>`
+    :`<div class="f"><div>${l}${n?`<small>${n}</small>`:""}</div><input type="${t==="arr"?"text":"number"}" step="any" id="p_${k}" value="${d}"></div>`).join("");
+}
+build("unknown",UNKNOWN);build("known",KNOWN);
+
+function readParams(){
+  const P={};
+  for(const [k,,,t] of [...UNKNOWN,...KNOWN]){
+    const e=$("p_"+k);
+    if(t==="bool")P[k]=e.checked;
+    else if(t==="arr"){P[k]=e.value.split(",").map(Number);if(P[k].length!==6||P[k].some(x=>!isFinite(x)))throw new Error(k+" は6個の数値をカンマ区切りで入力してください");}
+    else{P[k]=Number(e.value);if(!isFinite(P[k]))throw new Error(k+" が数値ではありません");}
+  }
+  return P;
+}
+const pct=x=>x/100;
+const SRC=["z100","z250","z400","z600","z750","stamp","ceil","cherry","suika","weak","strong"];
+const SRC_LABEL={z100:"100G",z250:"250G",z400:"400G",z600:"600G",z750:"750G",stamp:"スタンプ",ceil:"CZ天井",cherry:"チェリー変換",suika:"スイカ変換",weak:"弱リコ変換",strong:"強リコ変換"};
+const RARE_SRC=["cherry","suika","weak","strong"];
+
+function simulate(P,s,N){
+  const pSt=1/P.strong,pCh=1/P.cherry,pSu=1/P.suika,pWk=1/P.weak;
+  const t1=pSt,t2=t1+pCh,t3=t2+pSu,t4=t3+pWk;
+  const pDir=1/P.directDen[s];
+  const qFirst=P.czDen[s]/P.firstDen[s];
+  const zone={100:pct(P.z100),250:pct(P.z250),400:pct(P.z400[s]),600:pct(P.z600),750:pct(P.z750)};
+  const hkG={50:pct(P.h50),150:pct(P.h150[s]),300:pct(P.h300),450:pct(P.h450),650:pct(P.h650)};
+  const conv={cherry:pct(P.convCherry),suika:pct(P.convSuika),weak:pct(P.convWeak)};
+  const tr={cherry:pct(P.trCherry),suika:pct(P.trSuika),weak:pct(P.trWeak)};
+  const convWN=pct(P.convWeakNormal),convCz=pct(P.convCz),convCzS=pct(P.convCzStrong);
+  const czWin=pct(P.czWin),firstWin=pct(P.firstWin),stampP=pct(P.stamp);
+  const span=Math.max(0,P.hkMax-P.hkMin)+1;
+  const dur=()=>P.hkMin+Math.floor(Math.random()*span);
+  const o={games:0,cz:0,first:0,at:0,atCz:0,atDir:0,atCeil:0,hkGames:0,cycles:0,cz250:0,src:{}};
+  SRC.forEach(k=>o.src[k]=0);
+  let g=0,c=0,hk=0,zc=0,zWin=false,zSrc="",hadCz=false;
+  const resetAT=()=>{o.at++;o.cycles++;g=0;c=0;hk=0;zc=0;hadCz=false;};
+  for(let n=0;n<N;n++){
+    g++;c++;o.games++;
+    if(g>=P.atCeil){o.atCeil++;resetAT();continue;}
+    if(Math.random()<pDir){o.atDir++;resetAT();continue;}
+    const zg=P.resetOnCz?c:g;
+    const h=hkG[zg];
+    if(h!==undefined&&Math.random()<h)hk=Math.max(hk,dur());
+    const zp=zone[zg];
+    if(zp!==undefined&&zc===0){zc=P.zLen;zWin=Math.random()<zp;zSrc="z"+zg;}
+    if(hk>0)o.hkGames++;
+    // 小役
+    const r=Math.random();
+    let role=null;
+    if(r<t1)role="strong";else if(r<t2)role="cherry";else if(r<t3)role="suika";else if(r<t4)role="weak";
+    let cz=null;
+    if(role&&zc===0){
+      if(role==="strong"){if(Math.random()<convCzS)cz="strong";}
+      else{
+        const cv=hk>0?conv[role]:(role==="weak"?convWN:0);
+        if(cv>0&&Math.random()<cv&&Math.random()<convCz)cz=role;
+      }
+    }
+    if(role&&role!=="strong"&&(hk===0||P.extend)&&Math.random()<tr[role])hk=Math.max(hk,dur());
+    if(hk>0)hk--;
+    // 前兆の消化
+    if(!cz&&zc>0){zc--;if(zc===0){if(zWin)cz=zSrc;else if(Math.random()<stampP)cz="stamp";}}
+    if(!cz&&c>=P.czCeil)cz="ceil";
+    if(cz){
+      o.cz++;o.src[cz]++;
+      if(!hadCz){hadCz=true;if(g<=250+P.zLen)o.cz250++;}
+      const first=Math.random()<qFirst;if(first)o.first++;
+      if(Math.random()<(first?firstWin:czWin)){o.atCz++;resetAT();}
+      else{c=0;hk=0;zc=0;}
+    }
+  }
+  return o;
+}
+
+const den=(k,n)=>k?n/k:Infinity;
+const fmtDen=x=>isFinite(x)?"1/"+x.toFixed(1):"-";
+function cmp(sim,pub){const d=Math.abs(sim/pub-1);return `<span class="${d>0.05?"ng":"ok"}">${fmtDen(sim)}</span>`;}
+
+function show(P,R){
+  $("res").innerHTML="<tr><th>設定</th><th>CZ(sim)</th><th>CZ(公表)</th><th>AT(sim)</th><th>AT(公表)</th><th>レア役由来CZ</th><th>それ以外のCZ</th><th>250G+α以内</th><th>高確滞在</th><th>ファースト</th></tr>"+
+  R.map((o,s)=>{
+    const rare=RARE_SRC.reduce((a,k)=>a+o.src[k],0);
+    return `<tr><td>${s+1}</td><td>${cmp(den(o.cz,o.games),P.czDen[s])}</td><td>1/${P.czDen[s]}</td>`+
+      `<td>${cmp(den(o.at,o.games),P.atDen[s])}</td><td>1/${P.atDen[s]}</td>`+
+      `<td>${fmtDen(den(rare,o.games))}</td><td>${fmtDen(den(o.cz-rare,o.games))}</td>`+
+      `<td>${o.cycles?(o.cz250/o.cycles*100).toFixed(1)+"%":"-"}</td><td>${(o.hkGames/o.games*100).toFixed(1)}%</td>`+
+      `<td>${fmtDen(den(o.first,o.games))}</td></tr>`;
+  }).join("");
+  $("src").innerHTML="<tr><th>設定</th>"+SRC.map(k=>`<th>${SRC_LABEL[k]}</th>`).join("")+"</tr>"+
+    R.map((o,s)=>`<tr><td>${s+1}</td>`+SRC.map(k=>`<td>${o.cz?(o.src[k]/o.cz*100).toFixed(1):"0.0"}%</td>`).join("")+"</tr>").join("");
+}
+
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function setBusy(b){$("run").disabled=b;$("fit").disabled=b;}
+
+async function runAll(){
+  let P;try{P=readParams();}catch(e){$("status").textContent=e.message;return;}
+  const N=Math.max(10000,Number($("N").value)||0);
+  setBusy(true);const R=[];const t0=performance.now();
+  for(let s=0;s<6;s++){$("status").textContent=`設定${s+1} を計算中…`;await tick();R.push(simulate(P,s,N));}
+  show(P,R);
+  $("status").textContent=`完了(${((performance.now()-t0)/1000).toFixed(1)}秒)`;
+  setBusy(false);
+}
+
+async function fitConv(){
+  let P;try{P=readParams();}catch(e){$("status").textContent=e.message;return;}
+  setBusy(true);
+  const target=1/P.czDen[0],N=400000;
+  const rate=x=>{P.convCherry=P.convSuika=P.convWeak=x;const o=simulate(P,0,N);return o.cz/o.games;};
+  $("status").textContent="自動調整中…";await tick();
+  if(rate(0)>target){$("status").textContent="変換率0%でもCZが公表値より多くなります。規定ゲーム数のCZ当選率やスタンプ率を下げてください。";setBusy(false);return;}
+  if(rate(100)<target){$("status").textContent="変換率100%でもCZが公表値に届きません。規定ゲーム数のCZ当選率などを上げてください。";setBusy(false);return;}
+  let lo=0,hi=100;
+  for(let i=0;i<12;i++){
+    const mid=(lo+hi)/2;$("status").textContent=`自動調整中… ${mid.toFixed(1)}%`;await tick();
+    if(rate(mid)<target)lo=mid;else hi=mid;
+  }
+  const v=((lo+hi)/2).toFixed(1);
+  ["convCherry","convSuika","convWeak"].forEach(k=>$("p_"+k).value=v);
+  setBusy(false);
+  await runAll();
+  $("status").textContent+=` ／ 高確中変換率 ${v}% に調整`;
+}
+$("run").onclick=runAll;$("fit").onclick=fitConv;
+</script>
+</body>
+</html>

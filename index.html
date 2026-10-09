@@ -1,0 +1,568 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#d6336c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="リコリコ推測">
+<title>リコリコ 設定推測</title>
+<style>
+/* 片手操作のスマホ前提: 上部固定のセッション+タブ、下は1カラムのカード */
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#6b6b70;--card:#f3f3f6;--line:#d8d8de;--acc:#d6336c;--onacc:#fff;--warn:#b25b00;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16161a;--fg:#ececf0;--sub:#9a9aa3;--card:#222228;--line:#38383f;--acc:#ff6b9a;--onacc:#16161a;--warn:#ffb057;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16161a;--fg:#ececf0;--sub:#9a9aa3;--card:#222228;--line:#38383f;--acc:#ff6b9a;--onacc:#16161a;--warn:#ffb057;color-scheme:dark}
+:root{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,"Hiragino Sans","Yu Gothic UI",sans-serif}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.topin{max-width:640px;margin:0 auto;padding:8px 16px 0}
+main{max-width:640px;margin:0 auto;padding:4px 16px 32px}
+h1{font-size:16px;margin:0;min-width:0}
+button.danger{color:var(--warn);border-color:var(--warn)}
+h2{font-size:15px;margin:20px 0 8px}
+p.note{color:var(--sub);font-size:13px;margin:4px 0}
+.card{background:var(--card);border-radius:12px;padding:12px}
+.sess{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:6px}
+.mini{font-size:13px;padding:6px 0;font-variant-numeric:tabular-nums;color:var(--sub)}
+.mini b{color:var(--fg)}
+nav.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
+nav.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--sub);padding:8px 0;min-height:42px;font-size:14px}
+nav.tabs button.on{color:var(--fg);border-bottom-color:var(--acc);font-weight:600}
+section{display:none}section.on{display:block}
+.tiles{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0}
+.tile.off{opacity:.55}
+.tile .lb{font-size:13px;color:var(--sub);display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px;align-items:center}
+.tile .lb label{display:flex;gap:4px;align-items:center;font-size:12px}
+.tile .n{font-size:30px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.tile .bt{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px}
+button,select,input{font:inherit}
+button{padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-height:44px}
+button.plus{background:var(--acc);color:var(--onacc);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.5}
+input[type=number],input[type=text],select{width:100%;min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+input[type=number]{text-align:right}
+.f{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,130px);gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.f:last-child{border:0}
+.f input[type=number]{font-size:20px}
+.f small{display:block;color:var(--sub);font-size:12px}
+.ng{color:var(--warn);font-weight:600}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+label.chk{display:flex;gap:8px;align-items:center;padding:6px 0}
+.hint{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:4px 0}
+.hint:last-child{border:0}
+.hint input[type=number]{font-size:14px;padding:4px 6px}
+.place{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.place:last-child{border:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:36px;padding:4px 12px;font-size:13px}
+.seg button.on{background:var(--acc);color:var(--onacc)}
+.res{display:grid;grid-template-columns:48px minmax(0,1fr) 56px;gap:8px;align-items:center;margin:6px 0}
+.track{height:18px;background:var(--line);border-radius:9px;overflow:hidden}
+.fill{height:100%;background:var(--acc);width:0;transition:width .2s}
+.pct{text-align:right;font-variant-numeric:tabular-nums}
+.sum{font-size:15px;margin-top:10px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.bar button{min-height:40px;padding:6px 12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+.cv{border-bottom:1px solid var(--line);padding:8px 0}
+.cv:last-child{border:0}
+.cvh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.cvh span{font-variant-numeric:tabular-nums}
+.cvb{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-top:6px}
+.cva{font-size:12px;color:var(--sub);margin-top:4px}
+.help h3{font-size:14px;margin:14px 0 4px}
+.help h3:first-child{margin-top:0}
+.help ul{margin:0;padding-left:20px;font-size:14px}
+.help li{margin:2px 0}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin">
+  <h1>スマスロ リコリス・リコイル 設定推測</h1>
+  <div class="sess"><select id="sessSel" aria-label="セッション"></select><button id="newSess">新規</button></div>
+  <div class="mini" id="mini"></div>
+  <nav class="tabs">
+    <button data-tab="live">実戦</button>
+    <button data-tab="bulk">マイスロ</button>
+    <button data-tab="result">結果</button>
+    <button data-tab="manage">管理</button>
+    <button data-tab="help">機能</button>
+  </nav>
+</div></header>
+
+<main>
+<section id="tab-live">
+  <h2>実戦カウント</h2>
+  <div class="card"><div class="tiles" id="liveTiles"></div><p class="note" id="liveEmpty"></p></div>
+  <p class="note">「使用」を外した項目は計算に入れません。共通ベルは数え始めると自動で「使用」になります。</p>
+
+  <h2>高確中の変換メモ(記録専用)</h2>
+  <div class="card">
+    <div id="convRows"></div>
+    <div class="bar"><button id="convUndo">直前の操作を取り消す</button></div>
+  </div>
+  <p class="note">「変換高確率中」の帯が出ている間に引いたレア役だけを記録してください。前兆中は変換が起きないので除外します。帯の出ない内部高確は数えられません。計算には使いません。</p>
+
+  <h2>示唆</h2>
+  <div class="card" id="hints"></div>
+  <p class="note">重みは「管理」タブで変えられます。</p>
+</section>
+
+<section id="tab-bulk">
+  <h2>マイスロからまとめ入力</h2>
+  <div class="card">
+    <div class="f"><div>総ゲーム数<small>記録用</small></div><input type="number" inputmode="numeric" min="0" id="games" placeholder="未入力"></div>
+    <div class="f"><div>通常時ゲーム数<small>確率計算の分母</small></div><input type="number" inputmode="numeric" min="0" id="normalGames" placeholder="未入力"></div>
+    <div id="bulkFields"></div>
+  </div>
+  <div class="card" style="margin-top:8px"><p class="note" id="derived" style="margin:0"></p></div>
+  <p class="note">空欄の項目は計算に使いません。0 を入れると「0回だった」として計算します。総CZ突入回数は OPPOSITE BATTLE とファーストリコリスの合計を自動で計算します。AT直撃はマイスロの値をそのまま入れてください(天井での当選は含まれていません)。</p>
+</section>
+
+<section id="tab-result">
+  <h2>推測結果</h2>
+  <div class="card">
+    <div id="result"></div>
+    <div class="sum" id="summary"></div>
+    <p class="note" id="usedList"></p>
+  </div>
+  <h2>使用している設定別数値</h2>
+  <div class="card" style="overflow-x:auto"><table id="spec"></table></div>
+  <p class="note">共通ベルの設定2・3は資料に記載がなく、設定1と同値(1/95.8)と仮定しています。AT直撃は天井を除いた直撃の回数を入れてください。</p>
+  <p class="note">計算方法: 各項目の出現回数をポアソン分布とみなした尤度を掛け合わせ、事前確率を均等として正規化しています。各項目は独立と仮定した近似です。CZ は OPPOSITE BATTLE とファーストリコリスの合計を使います(契機別の設定差が公開されていないため)。</p>
+  <p class="note">分母には通常時ゲーム数を使います。未入力のときだけ総ゲーム数で代用しますが、AT中のゲーム数が含まれるため、どの項目も低設定寄りに偏ります。</p>
+</section>
+
+<section id="tab-manage">
+  <h2>このセッション</h2>
+  <div class="card">
+    <div class="split">
+      <input type="text" id="sessName" placeholder="台番号・メモ">
+      <select id="sessTrue" aria-label="確定設定"></select>
+    </div>
+    <div class="bar"><button id="delSess" class="danger">このセッションを削除</button></div>
+    <p class="note">確定設定は「設定が確定した台」の記録用です(ハワイ確認後など)。計算には使いません。</p>
+  </div>
+
+  <h2>バックアップ(全セッション)</h2>
+  <div class="card">
+    <div class="bar" style="margin:0"><button id="expJson">JSON書出</button><button id="impJson">JSON読込</button><button id="expCsv">CSV書出</button></div>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
+    <p class="note" id="expMsg"></p>
+  </div>
+  <p class="note">記録はこのブラウザの中だけに保存されます。ブラウザのデータを消したり機種変更したりすると消えるので、ときどき「JSON書出」でバックアップしてください。「JSON読込」で戻せます(同じセッションは上書き)。iPhone はホーム画面に追加して使うと消えにくくなります。</p>
+
+  <h2>項目の入力場所</h2>
+  <div class="card" id="placeRows"></div>
+  <p class="note">マイスロやデータカウンターで後から確認できる項目は「マイスロ」、その場で数える項目は「実戦」にしてください。切り替えても値はそのまま残ります。</p>
+
+  <h2>示唆の重み</h2>
+  <div class="card" id="weights"></div>
+  <p class="note">示唆が出たとき「設定6以外」に掛ける重みです。小さいほど設定6寄りに強く動きます(初期値 0.001)。</p>
+
+  <h2>その他</h2>
+  <div class="card"><p class="note" style="margin:0"><a href="sim.html">通常時シミュレーター(実験用)</a></p></div>
+</section>
+
+<section id="tab-help" class="help">
+  <h2>機能一覧</h2>
+  <div class="card">
+    <h3>実戦タブ</h3>
+    <ul>
+      <li>その場で数える項目の +1 / −1 カウンター(初期設定: CZ(レア役由来)、共通ベル、謎Vストック)</li>
+      <li>項目ごとの「使用」切り替え(外すと計算から除外)</li>
+      <li>高確中の変換メモ: チェリー・スイカ・弱リコリス目ごとの変換あり/なし、変換率、全セッション合計、取り消し</li>
+      <li>示唆のチェック: ラッシュ終了画面「ハワイ」、虹サミートロフィー</li>
+    </ul>
+    <h3>マイスロタブ</h3>
+    <ul>
+      <li>マイスロの項目のまとめ入力: 総ゲーム数、通常時ゲーム数、OPPOSITE BATTLE突入・成功、ファーストリコリス突入・成功、RUSH突入、AT直撃、レア役確率</li>
+      <li>空欄は計算から除外、0 は「0回」として計算</li>
+      <li>通常時ゲーム数を確率計算の分母に使用(未入力なら総ゲーム数で代用)</li>
+      <li>自動表示: 総CZ突入回数、CZ確率、各CZの成功率、通常契機CZ(総CZ − レア役由来)</li>
+    </ul>
+    <h3>結果タブ</h3>
+    <ul>
+      <li>設定1〜6の事後確率(バー表示)、設定4以上の確率、期待機械割</li>
+      <li>計算に使った項目の一覧、設定別数値の表</li>
+      <li>画面上部に設定4以上の確率と期待機械割を常時表示</li>
+    </ul>
+    <h3>管理タブ</h3>
+    <ul>
+      <li>セッション(台ごとの記録)の名前、確定設定の記録、削除</li>
+      <li>全セッションの JSON / CSV 書き出し、JSON 読み込み(バックアップの復元・端末間の引き継ぎ)</li>
+      <li>項目ごとの入力場所(実戦 / マイスロ)の切り替え</li>
+      <li>示唆の重みの調整</li>
+    </ul>
+    <h3>共通</h3>
+    <ul>
+      <li>セッションの切り替え・新規作成(画面上部)</li>
+      <li>ブラウザ内への自動保存(再読み込みしても残る、通信不要)</li>
+      <li>スマホ幅対応、ダークモード対応</li>
+    </ul>
+    <h3>通常時シミュレーター(別ページ・実験用)</h3>
+    <ul>
+      <li>変換高確・規定ゲーム数・前兆・スタンプ・天井を含む通常時の1ゲームずつのシミュレート</li>
+      <li>判明値と未判明値(仮定)の編集、設定1〜6の CZ / AT 確率と公表値の比較</li>
+      <li>CZ契機の内訳、レア役由来CZ確率、250G+α以内のCZ率、高確滞在率</li>
+      <li>高確中変換率の自動調整(設定1のCZ確率に合わせる)</li>
+      <li>設定推測には使いません</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<script>
+const SPEC={
+  cz:    {den:[198.7,196.9,191.3,183.3,175.9,169.4]},
+  at:    {den:[328.8,323.4,312.1,288.3,271.6,256.7]},
+  direct:{den:[22429.5,19006.5,15454.1,10809.3,7809.6,6263.7]},
+  first: {den:[3965.0,3706.6,3107.3,2925.9,2425.8,2084.8]},
+  bell:  {den:[95.8,95.8,95.8,87.6,83.2,79.1]}
+};
+const SPEC_NAMES={cz:"CZ(合計)",at:"AT初当り",direct:"AT直撃(天井除く)",first:"ファーストリコリス",bell:"共通ベル"};
+const PAYOUT=[97.9,98.9,101.3,106.1,110.4,114.6];
+
+// calc: 寄与する計算種別(空は記録専用)。種別に寄与する項目がすべて入力済みのときだけ計算に使う
+// place: 初期の入力場所、fixed: 入力場所を変えない、den: 回数ではなく確率の分母(1/x の x)
+const ITEMS=[
+  {k:"obIn",   label:"OPPOSITE BATTLE突入",    calc:["cz"],          place:"bulk"},
+  {k:"obWin",  label:"OPPOSITE BATTLE成功",    calc:[],              place:"bulk", note:"記録専用"},
+  {k:"first",  label:"ファーストリコリス突入", calc:["cz","first"],  place:"bulk"},
+  {k:"frWin",  label:"ファーストリコリス成功", calc:[],              place:"bulk", note:"記録専用"},
+  {k:"at",     label:"RUSH突入(AT初当り)",     calc:["at"],          place:"bulk"},
+  {k:"direct", label:"AT直撃(天井除く)",       calc:["direct"],      place:"bulk"},
+  {k:"rareDen",label:"レア役確率 1/x",         calc:[],              place:"bulk", fixed:true, den:true, optional:true, note:"記録専用・x を入力"},
+  {k:"czRare", label:"CZ(レア役由来)",         calc:[],              place:"live", note:"記録専用"},
+  {k:"bell",   label:"共通ベル",               calc:["bell"],        place:"live", optional:true},
+  {k:"vstock", label:"謎Vストック",            calc:[],              place:"live", optional:true, note:"記録専用"}
+];
+const isCalc=it=>it.calc.length>0;
+const CONV_ROLES=[{k:"cherry",label:"チェリー"},{k:"suika",label:"スイカ"},{k:"weak",label:"弱リコリス目"}];
+const HINTS=[
+  {k:"hawaii", label:"ラッシュ終了画面「ハワイ」(設定6濃厚)", w:0.001},
+  {k:"rainbow",label:"虹サミートロフィー(設定6濃厚)",       w:0.001}
+];
+
+const $=id=>document.getElementById(id);
+const KEY="lycoreco.v1";
+let store={sessions:[],cur:null,weights:{},place:{},tab:"live"};
+function load(){try{const s=localStorage.getItem(KEY);if(s)store=Object.assign(store,JSON.parse(s));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+const placeOf=k=>{const it=ITEMS.find(i=>i.k===k);return it.fixed?it.place:(store.place[k]||it.place);};
+
+function fillSession(s){
+  s.counts=s.counts||{};s.use=s.use||{};s.hints=s.hints||{};
+  if(s.normalGames===undefined)s.normalGames=null;
+  // 旧形式1: CZ をレア役由来+通常契機で持っていた
+  if(s.counts.cz==null&&s.counts.czOther!=null){
+    s.counts.cz=(s.counts.czRare||0)+(s.counts.czOther||0);
+    s.use.cz=!!(s.use.czRare||s.use.czOther);
+    delete s.counts.czOther;delete s.use.czOther;
+  }
+  // 旧形式2: CZ を合計で持っていた → OPPOSITE BATTLE = 合計 − ファーストリコリス
+  if(s.counts.obIn==null&&s.counts.cz!=null){
+    s.counts.obIn=s.use.first?Math.max(0,s.counts.cz-(s.counts.first||0)):s.counts.cz;
+    s.use.obIn=!!s.use.cz;
+    delete s.counts.cz;delete s.use.cz;
+  }
+  // 実戦の項目は 0 から数え始める。マイスロの項目は入力されるまで空欄(計算に使わない)
+  ITEMS.forEach(it=>{if(s.counts[it.k]==null)s.counts[it.k]=0;if(s.use[it.k]==null)s.use[it.k]=!it.optional&&placeOf(it.k)==="live";});
+  s.conv=s.conv||{};s.convLog=s.convLog||[];
+  CONV_ROLES.forEach(r=>{s.conv[r.k]=s.conv[r.k]||{n:0,y:0};});
+}
+function newSession(){
+  const d=new Date();
+  const s={id:"s"+Date.now(),name:`${d.getMonth()+1}/${d.getDate()}`,created:d.toISOString(),games:null,normalGames:null,trueSetting:""};
+  fillSession(s);
+  store.sessions.push(s);store.cur=s.id;return s;
+}
+function cur(){return store.sessions.find(s=>s.id===store.cur);}
+
+// ---- 静的な部分 ----
+$("spec").innerHTML="<tr><th>設定</th>"+[1,2,3,4,5,6].map(i=>`<th>${i}</th>`).join("")+"</tr>"+
+  Object.keys(SPEC).map(k=>`<tr><td>${SPEC_NAMES[k]}</td>`+SPEC[k].den.map(v=>`<td>1/${v}</td>`).join("")+"</tr>").join("")+
+  "<tr><td>機械割</td>"+PAYOUT.map(v=>`<td>${v}%</td>`).join("")+"</tr>";
+$("result").innerHTML=[1,2,3,4,5,6].map(i=>`<div class="res"><div>設定${i}</div><div class="track"><div class="fill" id="f${i}"></div></div><div class="pct" id="p${i}">-</div></div>`).join("");
+$("sessTrue").innerHTML='<option value="">確定設定: なし</option>'+[1,2,3,4,5,6].map(i=>`<option value="${i}">確定設定: ${i}</option>`).join("");
+
+// タブ
+function showTab(t){
+  store.tab=t;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  document.querySelectorAll("main section").forEach(s=>s.classList.toggle("on",s.id==="tab-"+t));
+  save();
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);window.scrollTo(0,0);});
+
+// 実戦タイル
+function buildLive(){
+  const list=ITEMS.filter(it=>placeOf(it.k)==="live");
+  $("liveTiles").innerHTML=list.map(it=>`
+<div class="tile" id="t_${it.k}">
+  <div class="lb"><span>${it.label}</span>${isCalc(it)?`<label><input type="checkbox" data-use="${it.k}">使用</label>`:`<span>${it.note||""}</span>`}</div>
+  <div class="n" id="n_${it.k}">0</div>
+  <div class="bt"><button data-k="${it.k}" data-d="-1">−1</button><button class="plus" data-k="${it.k}" data-d="1">+1</button></div>
+</div>`).join("");
+  $("liveEmpty").textContent=list.length?"":"実戦で数える項目はありません(「管理」タブで設定できます)。";
+}
+$("liveTiles").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-k]");if(!b)return;
+  const s=cur(),k=b.dataset.k,d=Number(b.dataset.d);
+  s.counts[k]=Math.max(0,(s.counts[k]||0)+d);
+  if(d>0)s.use[k]=true;
+  update();
+});
+$("liveTiles").addEventListener("change",e=>{
+  const k=e.target.dataset.use;if(!k)return;
+  cur().use[k]=e.target.checked;update();
+});
+
+// まとめ入力
+function buildBulk(){
+  const list=ITEMS.filter(it=>placeOf(it.k)==="bulk");
+  $("bulkFields").innerHTML=list.map(it=>`
+<div class="f"><div>${it.label}${it.note?`<small>${it.note}</small>`:""}</div>
+<input type="number" inputmode="${it.den?"decimal":"numeric"}" min="0" step="${it.den?"0.1":"1"}" data-bulk="${it.k}" placeholder="未入力"></div>`).join("");
+}
+$("bulkFields").addEventListener("input",e=>{
+  const k=e.target.dataset.bulk;if(!k)return;
+  const it=ITEMS.find(i=>i.k===k);
+  const s=cur(),v=e.target.value.trim(),n=it.den?parseFloat(v):parseInt(v,10);
+  if(v===""||!isFinite(n)){s.use[k]=false;s.counts[k]=0;}
+  else{s.use[k]=true;s.counts[k]=Math.max(0,n);}
+  update();
+});
+["games","normalGames"].forEach(id=>$(id).addEventListener("input",()=>{
+  const g=parseFloat($(id).value);
+  cur()[id]=isFinite(g)&&g>=0?g:null;update();
+}));
+
+// 変換メモ
+$("convRows").innerHTML=CONV_ROLES.map(r=>`
+<div class="cv">
+  <div class="cvh"><b>${r.label}</b><span id="cv_${r.k}"></span></div>
+  <div class="cvb"><button data-r="${r.k}" data-v="n">変換なし +1</button><button class="plus" data-r="${r.k}" data-v="y">変換あり +1</button></div>
+  <div class="cva" id="cva_${r.k}"></div>
+</div>`).join("");
+$("convRows").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-r]");if(!b)return;
+  const s=cur();s.conv[b.dataset.r][b.dataset.v]++;s.convLog.push([b.dataset.r,b.dataset.v]);
+  renderConv();save();
+});
+$("convUndo").onclick=()=>{
+  const s=cur();const last=s.convLog.pop();if(!last)return;
+  s.conv[last[0]][last[1]]=Math.max(0,s.conv[last[0]][last[1]]-1);
+  renderConv();save();
+};
+const fmtConv=(n,y)=>`変換 ${y} / ${n+y}回`+(n+y?`(${(y/(n+y)*100).toFixed(1)}%)`:"");
+function renderConv(){
+  const s=cur();
+  CONV_ROLES.forEach(r=>{
+    const c=s.conv[r.k];
+    $("cv_"+r.k).textContent=fmtConv(c.n,c.y);
+    let n=0,y=0;store.sessions.forEach(x=>{if(x.conv&&x.conv[r.k]){n+=x.conv[r.k].n;y+=x.conv[r.k].y;}});
+    $("cva_"+r.k).textContent="全セッション合計: "+fmtConv(n,y);
+  });
+  $("convUndo").disabled=!s.convLog.length;
+}
+
+// 示唆
+$("hints").innerHTML=HINTS.map(h=>`<label class="chk"><input type="checkbox" id="h_${h.k}">${h.label}</label>`).join("");
+$("weights").innerHTML=HINTS.map(h=>`<div class="hint"><div>${h.label}</div><input type="number" step="any" min="0" max="1" id="w_${h.k}"></div>`).join("");
+HINTS.forEach(h=>{
+  $("h_"+h.k).onchange=e=>{cur().hints[h.k]=e.target.checked;update();};
+  $("w_"+h.k).oninput=e=>{const v=parseFloat(e.target.value);store.weights[h.k]=isFinite(v)&&v>=0?v:h.w;update();};
+});
+
+// 入力場所
+function buildPlace(){
+  $("placeRows").innerHTML=ITEMS.filter(it=>!it.fixed).map(it=>{
+    const p=placeOf(it.k);
+    return `<div class="place"><div>${it.label}</div><div class="seg">
+<button data-place="${it.k}" data-v="live" class="${p==="live"?"on":""}">実戦</button>
+<button data-place="${it.k}" data-v="bulk" class="${p==="bulk"?"on":""}">マイスロ</button></div></div>`;
+  }).join("");
+}
+$("placeRows").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-place]");if(!b)return;
+  store.place[b.dataset.place]=b.dataset.v;
+  buildPlace();buildLive();buildBulk();render();update();
+});
+
+// ---- 描画 ----
+function render(){
+  const s=cur();
+  $("sessSel").innerHTML=store.sessions.map(x=>`<option value="${x.id}" ${x.id===s.id?"selected":""}>${x.name||"(無題)"}${x.trueSetting?` [設定${x.trueSetting}]`:""}</option>`).join("");
+  $("sessName").value=s.name||"";
+  $("sessTrue").value=s.trueSetting||"";
+  $("games").value=s.games==null?"":s.games;
+  $("normalGames").value=s.normalGames==null?"":s.normalGames;
+  document.querySelectorAll("[data-bulk]").forEach(e=>{const k=e.dataset.bulk;e.value=s.use[k]?s.counts[k]:"";});
+  HINTS.forEach(h=>{
+    $("h_"+h.k).checked=!!s.hints[h.k];
+    $("w_"+h.k).value=store.weights[h.k]!=null?store.weights[h.k]:h.w;
+  });
+  renderConv();
+}
+// 分母: 通常時ゲーム数(未入力なら総ゲーム数で代用)
+function denom(s){
+  if(s.normalGames>0)return {G:s.normalGames,normal:true};
+  return {G:s.games||0,normal:false};
+}
+function compute(){
+  const s=cur();const {G,normal}=denom(s);
+  const logL=[0,0,0,0,0,0];
+  const used=[];
+  if(G>0){
+    for(const key in SPEC){
+      const contrib=ITEMS.filter(it=>it.calc.includes(key));
+      if(!contrib.length||!contrib.every(it=>s.use[it.k]))continue;
+      const k=contrib.reduce((a,it)=>a+(s.counts[it.k]||0),0);
+      used.push(SPEC_NAMES[key]);
+      for(let i=0;i<6;i++){const p=1/SPEC[key].den[i];logL[i]+=k*Math.log(p)-G*p;}
+    }
+  }
+  const hints=[];
+  HINTS.forEach(h=>{
+    if(s.hints[h.k]){
+      hints.push(h.label.replace(/\(.*\)$/,""));
+      const w=store.weights[h.k]!=null?store.weights[h.k]:h.w;
+      for(let i=0;i<5;i++)logL[i]+=Math.log(Math.max(w,1e-12));
+    }
+  });
+  const m=Math.max(...logL);
+  const w=logL.map(x=>Math.exp(x-m));const t=w.reduce((a,b)=>a+b,0);
+  return {post:w.map(x=>x/t),G,normal,used,hints};
+}
+// マイスロタブの自動表示(総CZ・確率・成功率・通常契機CZ)
+function renderDerived(s){
+  const {G}=denom(s);
+  const cnt=k=>s.use[k]?s.counts[k]:null;
+  const rate=n=>G>0&&n>0?`(1/${(G/n).toFixed(1)})`:"";
+  const ng=t=>`<span class="ng">${t}</span>`;
+  const L=[];
+  const ob=cnt("obIn"),fr=cnt("first");
+  if(ob!=null&&fr!=null){
+    const t=ob+fr;L.push(`総CZ突入 ${t}回${rate(t)}`);
+    const rare=cnt("czRare");
+    if(rare!=null)L.push(t-rare>=0?`うちレア役由来 ${rare} → 通常契機 ${t-rare}`:ng(`レア役由来(${rare})が総CZ(${t})より多くなっています`));
+  }else L.push("総CZ突入: OPPOSITE BATTLE とファーストリコリスの両方を入れると表示します");
+  const succ=(win,inn,label)=>{
+    const w=cnt(win),n=cnt(inn);if(w==null||n==null)return;
+    if(w>n)L.push(ng(`${label}: 成功回数が突入回数より多くなっています`));
+    else if(n>0)L.push(`${label}成功率 ${(w/n*100).toFixed(1)}%(${w}/${n})`);
+  };
+  succ("obWin","obIn","OPPOSITE BATTLE");
+  succ("frWin","first","ファーストリコリス");
+  if(cnt("at")!=null)L.push(`RUSH突入 ${cnt("at")}回${rate(cnt("at"))}`);
+  if(cnt("direct")!=null)L.push(`AT直撃 ${cnt("direct")}回${rate(cnt("direct"))}`);
+  if(G>0&&!(s.normalGames>0))L.push(ng("通常時ゲーム数が未入力のため、総ゲーム数で計算しています"));
+  $("derived").innerHTML=L.join("<br>");
+}
+// 入力欄の値は書き換えない(打鍵中のカーソルを保つため)。欄への反映は render() で行う
+function update(){
+  const s=cur();
+  ITEMS.forEach(it=>{
+    const n=$("n_"+it.k);if(!n)return;
+    n.textContent=s.counts[it.k]||0;
+    $("t_"+it.k).classList.toggle("off",isCalc(it)&&!s.use[it.k]);
+    const u=document.querySelector(`[data-use="${it.k}"]`);if(u)u.checked=!!s.use[it.k];
+  });
+  renderDerived(s);
+  const r=compute();
+  r.post.forEach((p,i)=>{$("f"+(i+1)).style.width=(p*100)+"%";$("p"+(i+1)).textContent=(p*100).toFixed(1)+"%";});
+  let text;
+  if(!r.used.length&&!r.hints.length){
+    text="通常時ゲーム数と回数を入力すると計算します。";
+    $("summary").textContent=text;$("mini").textContent=text;
+  }else{
+    const hi=r.post.slice(3).reduce((a,b)=>a+b,0);
+    const ex=r.post.reduce((a,p,i)=>a+p*PAYOUT[i],0);
+    const html=`設定4以上 <b>${(hi*100).toFixed(1)}%</b> ／ 期待機械割 <b>${ex.toFixed(1)}%</b>`;
+    const g=r.G?(r.normal?` ／ 通常時 ${r.G}G`:` ／ 総 ${r.G}G(通常時未入力)`):"";
+    $("summary").innerHTML=html;$("mini").innerHTML=html+g;
+  }
+  $("usedList").textContent="計算に使った項目: "+([...r.used,...r.hints].join("、")||"なし")+
+    (r.G?(r.normal?" ／ 分母: 通常時ゲーム数":" ／ 分母: 総ゲーム数(通常時ゲーム数が未入力のため)"):"");
+  save();
+}
+
+// セッション操作
+$("sessName").oninput=e=>{cur().name=e.target.value;save();const o=$("sessSel").selectedOptions[0];if(o)o.textContent=(e.target.value||"(無題)")+(cur().trueSetting?` [設定${cur().trueSetting}]`:"");};
+$("sessTrue").onchange=e=>{cur().trueSetting=e.target.value;render();update();};
+$("sessSel").onchange=e=>{store.cur=e.target.value;render();update();};
+$("newSess").onclick=()=>{newSession();render();update();};
+// 削除は2回押しで確定(アーティファクト内では confirm() が使えない)
+let delArm=null;
+$("delSess").onclick=()=>{
+  const b=$("delSess");
+  if(!delArm){
+    b.textContent="もう一度押すと削除します";
+    delArm=setTimeout(()=>{delArm=null;b.textContent="このセッションを削除";},4000);
+    return;
+  }
+  clearTimeout(delArm);delArm=null;b.textContent="このセッションを削除";
+  store.sessions=store.sessions.filter(x=>x.id!==store.cur);
+  if(!store.sessions.length)newSession();
+  store.cur=store.sessions[store.sessions.length-1].id;render();update();
+};
+function download(name,text,type){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+}
+// JSON 読込(バックアップの復元・別の端末からの引き継ぎ)。同じ id のセッションは読み込んだ内容で上書き
+$("impJson").onclick=()=>$("impFile").click();
+$("impFile").onchange=async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  const msg=$("expMsg");
+  try{
+    const list=JSON.parse(await f.text());
+    if(!Array.isArray(list)||list.some(s=>!s||typeof s.id!=="string"))throw new Error("形式");
+    let added=0,replaced=0;
+    list.forEach(s=>{
+      fillSession(s);
+      const i=store.sessions.findIndex(x=>x.id===s.id);
+      if(i>=0){store.sessions[i]=s;replaced++;}else{store.sessions.push(s);added++;}
+    });
+    store.sessions.sort((a,b)=>String(a.created).localeCompare(String(b.created)));
+    if(!cur())store.cur=store.sessions[store.sessions.length-1].id;
+    render();update();
+    msg.textContent=`読み込みました(追加 ${added} 件、上書き ${replaced} 件)。`;
+  }catch(err){
+    msg.textContent="読み込めませんでした。このアプリの「JSON書出」で保存したファイルを選んでください。";
+  }
+};
+$("expJson").onclick=()=>download("lycoreco.json",JSON.stringify(store.sessions,null,2),"application/json");
+$("expCsv").onclick=()=>{
+  const head=["name","created","trueSetting","games","normalGames",...ITEMS.map(i=>i.k),"czTotal","czOther",...CONV_ROLES.flatMap(r=>[r.k+"_hk_noconv",r.k+"_hk_conv"])];
+  const rows=store.sessions.map(s=>{
+    const val=k=>s.use[k]?s.counts[k]:"";
+    const total=s.use.obIn&&s.use.first?s.counts.obIn+s.counts.first:"";
+    const other=total!==""&&s.use.czRare?total-s.counts.czRare:"";
+    return [s.name,s.created,s.trueSetting,s.games==null?"":s.games,s.normalGames==null?"":s.normalGames,...ITEMS.map(i=>val(i.k)),total,other,
+      ...CONV_ROLES.flatMap(r=>[s.conv[r.k].n,s.conv[r.k].y])]
+      .map(v=>`"${String(v==null?"":v).replace(/"/g,'""')}"`).join(",");
+  });
+  download("lycoreco.csv","﻿"+[head.join(","),...rows].join("\n"),"text/csv");
+};
+
+// ---- 起動 ----
+load();
+store.sessions.forEach(fillSession);
+if(!store.sessions.length)newSession();
+if(!cur())store.cur=store.sessions[store.sessions.length-1].id;
+buildLive();buildBulk();buildPlace();
+showTab(["live","bulk","result","manage","help"].includes(store.tab)?store.tab:"live");
+render();update();
+</script>
+</body>
+</html>
