@@ -20,7 +20,17 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,"Hira
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
 .topin{max-width:640px;margin:0 auto;padding:8px 16px 0}
 main{max-width:640px;margin:0 auto;padding:4px 16px 32px}
-h1{font-size:16px;margin:0;min-width:0}
+/* スマホ横画面: 上部を1段にまとめて縦の場所を空ける(左にセッションと結果、右にタブ) */
+@media (orientation:landscape) and (max-height:500px){
+  .topin{max-width:none;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);column-gap:16px;align-items:center;padding-top:4px}
+  .sess{margin-top:0;grid-column:1;grid-row:1}
+  .sess select,.sess button{min-height:36px;padding-block:4px}
+  .mini{grid-column:1;grid-row:2;padding:2px 0 4px;font-size:12px}
+  nav.tabs{grid-column:2;grid-row:1 / span 2;align-self:stretch}
+  main,.foot{max-width:none}
+}
+.foot{max-width:640px;margin:0 auto;padding:12px 16px 24px;border-top:1px solid var(--line)}
+.foot h1{font-size:13px;font-weight:600;color:var(--sub);margin:0}
 button.danger{color:var(--warn);border-color:var(--warn)}
 h2{font-size:15px;margin:20px 0 8px}
 p.note{color:var(--sub);font-size:13px;margin:4px 0}
@@ -88,7 +98,6 @@ a{color:var(--acc)}
 </head>
 <body>
 <header class="top"><div class="topin">
-  <h1>スマスロ リコリス・リコイル 設定推測</h1>
   <div class="sess"><select id="sessSel" aria-label="セッション"></select><button id="newSess">新規</button></div>
   <div class="mini" id="mini"></div>
   <nav class="tabs">
@@ -111,7 +120,7 @@ a{color:var(--acc)}
     <div id="zoneRows"></div>
     <div class="bar"><button id="zoneUndo">直前の操作を取り消す</button></div>
   </div>
-  <p class="note">AT終了後のゲーム数で150G・400Gに到達したとき、結果を1回だけ押してください。150Gは「変換高確率中」の帯で判断します。帯の出ない内部高確は数えられないため移行率が低めに出やすく、低設定寄りに偏ることがあります。気になる場合は「使用」を外してください。</p>
+  <p class="note">AT終了後のゲーム数で150G・400Gに到達したとき、結果を1回だけ押してください。150Gは「変換高確率中」の帯で判断します。150Gの手前ですでに帯が出ていたときは、150Gで移行したか見分けられないので押さないでください。帯の出ない内部高確は数えられないため移行率が低めに出やすく、低設定寄りに偏ることがあります。気になる場合は「使用」を外してください。</p>
 
   <h2>高確中の変換メモ(記録専用)</h2>
   <div class="card">
@@ -155,8 +164,9 @@ a{color:var(--acc)}
   <p class="note">AT中ゲーム数は「総ゲーム数 − 通常時ゲーム数」です。公表されているベル確率は通常時の値なので、AT中と合計は「AT中も同じ確率で抽選している」と仮定した計算です。</p>
   <h2>使用している設定別数値</h2>
   <div class="card" style="overflow-x:auto"><table id="spec"></table></div>
-  <p class="note">共通ベルの設定2・3は資料に記載がなく、設定1と同値(1/95.8)と仮定しています。AT直撃は天井を除いた直撃の回数を入れてください。</p>
+  <p class="note">共通ベルは設定1〜3が共通で 1/95.8 です。AT直撃は天井を除いた直撃の回数を入れてください。</p>
   <p class="note">※ は公表値から算出した値です。OPPOSITE BATTLE(単独)= CZ合計からファーストリコリスを除いた確率、RUSH(直撃を除く)= RUSH突入からAT直撃を除いた確率です。同じ当選を二重に数えないよう、計算にはこの重ならない形を使います。</p>
+  <p class="note">CZ回数(OPPOSITE BATTLE・ファーストリコリス)を入れたときは、RUSHを「CZ1回あたりのRUSH当選率」として使います(RUSH突入 − AT直撃 を CZ回数 で割った割合)。RUSH回数のうちCZ回数で説明できる分を二重に数えず、CZ成功率などの設定差だけを取り出すためです。公表値から逆算すると設定1 約59.5%、設定6 約63.3%で、設定4以上がやや高くなっています。差が小さいので効きは弱めです。</p>
   <p class="note">計算方法: 回数の項目はポアソン分布、150G・400Gは到達回数に対する当選の二項分布として尤度を掛け合わせ、事前確率を均等として正規化しています。各項目は独立と仮定した近似です。400GのCZはCZ回数にも含まれるため、少しだけ重なりが残ります。</p>
   <p class="note">分母には通常時ゲーム数を使います。未入力のときだけ総ゲーム数で代用しますが、AT中のゲーム数が含まれるため、どの項目も低設定寄りに偏ります。</p>
 </section>
@@ -214,6 +224,7 @@ a{color:var(--acc)}
     <ul>
       <li>設定1〜6の事後確率(バー表示)、設定4以上の確率、期待機械割</li>
       <li>計算に使った項目の一覧、設定別数値の表</li>
+      <li>二重カウントの防止: CZ合計はOPPOSITE BATTLE単独とファーストリコリスに分け、CZ回数を入れたときのRUSHは「CZ1回あたりのRUSH当選率」として使う</li>
       <li>共通ベルだけで見た推測: 通常時・AT中・合計それぞれの確率と設定1〜6の確率、総合の推測に入れる区分の切り替え</li>
       <li>画面上部に設定4以上の確率と期待機械割を常時表示</li>
     </ul>
@@ -241,6 +252,7 @@ a{color:var(--acc)}
   </div>
 </section>
 </main>
+<footer class="foot"><h1>スマスロ リコリス・リコイル 設定推測</h1></footer>
 
 <script>
 // 解析サイトの公表値(1/x の x)
@@ -263,9 +275,13 @@ const SPEC={
   bell:  {name:"共通ベル",               den:PUB.bell}
 };
 // 到達時の当否で見る項目(二項分布)
+// CZ1回あたりのRUSH当選率 = RUSH確率 ÷ CZ確率(公表値から算出)。CZ天井のCZや天井AT、CZ成功率の設定差もすべて含んだ値
+const perCz=(at,cz)=>at.map((a,i)=>(1/a)/(1/cz[i]));
 const RATES={
   h150:{name:"150G 変換高確移行",p:[0.5,0.5,0.5,0.547,0.586,0.625]},
-  z400:{name:"400G CZ当選",      p:[0.109,0.117,0.145,0.168,0.195,0.254]}
+  z400:{name:"400G CZ当選",      p:[0.109,0.117,0.145,0.168,0.195,0.254]},
+  rpcx:{name:"CZ1回あたりのRUSH(直撃を除く)",p:perCz(SPEC.atx.den,PUB.cz),derived:true},
+  rpc: {name:"CZ1回あたりのRUSH",            p:perCz(PUB.at,PUB.cz),derived:true}
 };
 const PAYOUT=[97.9,98.9,101.3,106.1,110.4,114.6];
 
@@ -348,7 +364,7 @@ function cur(){return store.sessions.find(s=>s.id===store.cur);}
   $("spec").innerHTML="<tr><th>設定</th>"+[1,2,3,4,5,6].map(i=>`<th>${i}</th>`).join("")+"</tr>"+
     row("CZ合計(参考)",den(PUB.cz))+
     Object.values(SPEC).map(x=>row(x.name+(x.derived?" ※":""),den(x.den))).join("")+
-    Object.values(RATES).map(x=>row(x.name,x.p.map(v=>(v*100).toFixed(1)+"%"))).join("")+
+    Object.values(RATES).map(x=>row(x.name+(x.derived?" ※":""),x.p.map(v=>(v*100).toFixed(1)+"%"))).join("")+
     row("機械割",PAYOUT.map(v=>v+"%"));
 }
 $("result").innerHTML=[1,2,3,4,5,6].map(i=>`<div class="res"><div>設定${i}</div><div class="track"><div class="fill" id="f${i}"></div></div><div class="pct" id="p${i}">-</div></div>`).join("");
@@ -550,16 +566,29 @@ function normalize(L){
 }
 function compute(){
   const s=cur();const {G,normal}=denom(s);
-  const terms=[],used=[];
+  const terms=[],used=[],skipped=[];
   const u=k=>!!s.use[k],c=k=>s.counts[k]||0;
   const add=(key,k)=>{terms.push({key,k,G});used.push(SPEC[key].name);};
   if(G>0){
     // 重ならない形で使う: OPPOSITE BATTLE とファーストリコリス、直撃を除いたRUSH と AT直撃
     if(u("obIn"))add("ob",c("obIn"));
     if(u("first"))add("first",c("first"));
-    if(u("at")&&u("direct")){add("atx",Math.max(0,c("at")-c("direct")));add("direct",c("direct"));}
-    else if(u("at"))add("at",c("at"));
-    else if(u("direct"))add("direct",c("direct"));
+    // 直撃以外のRUSHはほぼ「CZ回数 × CZ成功率(設定差なし)」で決まり、CZ回数と同じ情報になる。
+    // CZ回数を入れたときは二重に数えないよう、RUSHは計算に使わない
+    const czIn=u("obIn")||u("first");
+    if(u("at")&&!czIn){
+      if(u("direct")){add("atx",Math.max(0,c("at")-c("direct")));add("direct",c("direct"));}
+      else add("at",c("at"));
+    }else if(u("direct"))add("direct",c("direct"));
+    // CZ回数が分かっているときは、RUSHを「CZ1回あたりのRUSH当選率」(CZ回数に対する二項分布)として使う。
+    // RUSH回数のうちCZ回数で説明できる分は除かれ、CZ成功率などの設定差だけが残る
+    const czBoth=u("obIn")&&u("first");
+    if(u("at")&&czBoth){
+      const n=c("obIn")+c("first"),withD=u("direct");
+      const k=Math.min(n,Math.max(0,c("at")-(withD?c("direct"):0)));
+      const key=withD?"rpcx":"rpc";
+      if(n>0){terms.push({bin:key,y:k,n:n-k});used.push(`${RATES[key].name}(${k}/${n})`);}
+    }else if(u("at")&&czIn)skipped.push("RUSH突入(OPPOSITE BATTLE とファーストリコリスの両方が必要)");
   }
   ZONES.forEach(z=>{
     const d=s.zone[z.k];
@@ -577,7 +606,7 @@ function compute(){
       for(let i=0;i<5;i++)logL[i]+=Math.log(Math.max(w,1e-12));
     }
   });
-  return {post:normalize(logL),G,normal,used,hints};
+  return {post:normalize(logL),G,normal,used,hints,skipped};
 }
 // 共通ベルだけで見た推測(通常時・AT中・合計)
 function renderBell(s){
@@ -616,6 +645,10 @@ function renderDerived(s){
   if(cnt("at")!=null)L.push(`RUSH突入 ${cnt("at")}回${rate(cnt("at"))}`);
   if(cnt("direct")!=null)L.push(`AT直撃 ${cnt("direct")}回${rate(cnt("direct"))}`);
   if(cnt("at")!=null&&cnt("direct")!=null&&cnt("direct")>cnt("at"))L.push(ng("AT直撃がRUSH突入より多くなっています(RUSH突入は直撃を含む回数です)"));
+  if(cnt("at")!=null&&ob!=null&&fr!=null&&ob+fr>0){
+    const k=cnt("at")-(cnt("direct")||0),n=ob+fr;
+    L.push(`CZ1回あたりのRUSH(直撃を除く) ${(k/n*100).toFixed(1)}%(${k}/${n}) ／ 設定1 59.5%・設定6 63.3%`);
+  }
   if(s.games>0&&s.normalGames>0){
     if(s.normalGames>s.games)L.push(ng("通常時ゲーム数が総ゲーム数より多くなっています"));
     else L.push(`AT中ゲーム数 ${s.games-s.normalGames}(総 − 通常時)`);
@@ -650,7 +683,8 @@ function update(){
   }
   $("usedList").textContent="計算に使った項目: "+([...r.used,...r.hints].join("、")||"なし")+
     (r.G?(r.normal?" ／ 回数の項目の分母: 通常時ゲーム数":" ／ 回数の項目の分母: 総ゲーム数(通常時ゲーム数が未入力のため)"):"")+
-    " ／ 150G・400Gは到達回数に対する割合";
+    " ／ 150G・400Gは到達回数に対する割合"+
+    (r.skipped.length?" ／ 使っていない項目: "+r.skipped.join("、"):"");
   save();
 }
 
